@@ -1,961 +1,487 @@
-}
-        }
-
-        // Search Functionality
-        document.getElementById('search-input').addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const filteredProducts = products.filter(p => p.name.toLowerCase().includes(query));
-            renderProducts(filteredProducts);
-        });
-
-        // Inform TG that background is custom
-        tg.setBackgroundColor('#0a0a0a');
-        tg.setHeaderColor('#0a0a0a');
-    </script>
-</body>
-</html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TeymBots Sneakers</title>
-    
-    <!-- Telegram Web App SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <!-- Tailwind CSS -->
+    <title>TeymBots Store</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Phosphor Icons for UI -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
-    <!-- Google Fonts: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0a0a0a; /* Deep black background */
-            color: #ffffff;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        /* Hide scrollbar for clean horizontal scrolling */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        /* Modal slide animation */
-        .cart-modal {
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: translateY(100%);
-        }
-        .cart-modal.open {
-            transform: translateY(0);
-        }
-
-        .text-truncate-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
+        body { background-color: #0a0a0a; color: white; -webkit-tap-highlight-color: transparent; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .nav-btn.active { color: #ef4444; }
     </style>
 </head>
 <body class="pb-20">
 
-    <!-- View: Catalog -->
-    <div id="view-catalog">
-        <!-- Header / Search -->
-        <header class="sticky top-0 z-30 bg-[#0a0a0a] pt-4 pb-2 px-4 border-b border-neutral-900">
-            <div class="flex items-center gap-2 mb-3 text-neutral-400">
-                <i class="ph-fill ph-truck text-red-500"></i>
-                <span class="text-xs font-medium tracking-wide">TeymBots Logistics • Прямая доставка из Китая</span>
-            </div>
-            <div class="relative w-full">
-                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-lg"></i>
-                <input id="search-input" type="text" placeholder="Поиск кроссовок, брендов..." class="w-full bg-[#111111] text-white pl-10 pr-4 py-3 rounded-xl border border-neutral-800 focus:outline-none focus:border-red-500 text-sm transition-colors">
-            </div>
-        </header>
-        <!-- Catalog -->
-        <main class="px-4 mt-4">
-            <h2 class="text-lg font-bold mb-4">Популярное</h2>
-            <div class="grid grid-cols-2 gap-3" id="products-grid">
-                <!-- Products will be injected here by JS -->
-            </div>
-        </main>
-    </div>
-
-    <!-- View: Profile -->
-    <div id="view-profile" class="hidden px-4 pt-8">
-        <div class="flex flex-col items-center gap-3">
-            <div onclick="toggleAdminAccess()" class="w-24 h-24 rounded-full bg-neutral-800 border-2 border-red-600 flex items-center justify-center overflow-hidden shadow-[0_0_15px_rgba(220,38,38,0.2)] cursor-pointer">
-                <i class="ph-fill ph-user text-5xl text-neutral-500 pointer-events-none"></i>
-            </div>
-            <h2 class="text-2xl font-bold text-white">Teym</h2>
-            <p class="text-sm text-neutral-400">@teym_user</p>
+    <!-- Header -->
+    <div class="sticky top-0 bg-[#0a0a0a] z-40 px-4 pt-4 pb-2">
+        <div class="flex items-center text-gray-400 text-xs mb-3">
+            <i class="fa-solid fa-truck-fast mr-2 text-red-500"></i>
+            <span>TeymBots Logistics • Прямая доставка из Китая</span>
         </div>
-        
-        <!-- Orders Section -->
-        <div class="mt-8">
-            <h3 class="text-lg font-bold mb-4">Мои заказы</h3>
-            <div id="orders-container" class="flex flex-col gap-3">
-                <p class="text-neutral-500 text-sm">У вас пока нет заказов.</p>
-            </div>
-        </div>
-
-        <!-- Menu Buttons -->
-        <div class="mt-8 flex flex-col gap-2 mb-6">
-            <button id="admin-menu-btn" onclick="openAdmin()" class="hidden w-full bg-[#111111] rounded-2xl p-4 border border-neutral-900 flex items-center justify-between hover:bg-neutral-900 transition-colors border-red-900/30">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-red-900/20 flex items-center justify-center text-red-500">
-                        <i class="ph-fill ph-gear text-xl"></i>
-                    </div>
-                    <span class="text-sm font-medium text-white">Управление магазином</span>
-                </div>
-                <i class="ph-bold ph-caret-right text-neutral-600"></i>
-            </button>
-            <button onclick="openSupport()" class="w-full bg-[#111111] rounded-2xl p-4 border border-neutral-900 flex items-center justify-between hover:bg-neutral-900 transition-colors">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center text-neutral-400">
-                        <i class="ph-fill ph-headset text-xl"></i>
-                    </div>
-                    <span class="text-sm font-medium text-white">Служба поддержки</span>
-                </div>
-                <i class="ph-bold ph-caret-right text-neutral-600"></i>
-            </button>
-            <button onclick="openAbout()" class="w-full bg-[#111111] rounded-2xl p-4 border border-neutral-900 flex items-center justify-between hover:bg-neutral-900 transition-colors">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center text-neutral-400">
-                        <i class="ph-fill ph-info text-xl"></i>
-                    </div>
-                    <span class="text-sm font-medium text-white">О приложении</span>
-                </div>
-                <i class="ph-bold ph-caret-right text-neutral-600"></i>
-            </button>
+        <div class="relative">
+            <i class="fa-solid fa-search absolute left-3 top-3 text-gray-500"></i>
+            <input type="text" id="search-input" placeholder="Поиск кроссовок, брендов..." 
+                   class="w-full bg-[#1a1a1a] text-white rounded-xl py-2.5 pl-10 pr-4 outline-none border border-gray-800 focus:border-red-500 transition-colors">
         </div>
     </div>
 
-    <!-- Bottom Navigation -->
-    <nav class="fixed bottom-0 left-0 w-full bg-[#111111] border-t border-neutral-900 flex justify-around items-center pb-safe pt-2 z-40" style="padding-bottom: max(0.5rem, env(safe-area-inset-bottom));">
-        <button onclick="switchTab('catalog', 'nav-catalog')" id="nav-catalog" class="nav-btn flex flex-col items-center gap-1 p-2 text-red-600 w-16 transition-colors">
-            <i class="ph-fill ph-house text-2xl nav-icon"></i>
-            <span class="text-[10px] font-medium">Главная</span>
-        </button>
-        <button onclick="openCart()" id="nav-cart" class="nav-btn flex flex-col items-center gap-1 p-2 text-neutral-500 w-16 relative transition-colors">
-            <i class="ph ph-shopping-cart text-2xl nav-icon"></i>
-            <span class="text-[10px] font-medium">Корзина</span>
-            <!-- Cart Badge -->
-            <div id="cart-badge" class="hidden absolute top-1 right-2 bg-red-600 text-white text-[9px] font-bold h-4 w-4 flex items-center justify-center rounded-full">0</div>
-        </button>
-        <button onclick="switchTab('profile', 'nav-profile')" id="nav-profile" class="nav-btn flex flex-col items-center gap-1 p-2 text-neutral-500 w-16 transition-colors">
-            <i class="ph ph-user text-2xl nav-icon"></i>
-            <span class="text-[10px] font-medium">Профиль</span>
-        </button>
-    </nav>
-
-    <!-- Cart Modal -->
-    <div id="cart-modal" class="cart-modal fixed inset-0 bg-[#0a0a0a] z-50 flex flex-col h-full w-full">
-        <div class="flex items-center justify-between p-4 border-b border-neutral-900 bg-[#0a0a0a] sticky top-0">
-            <h2 class="text-xl font-bold">Корзина</h2>
-            <button onclick="closeCart()" class="p-2 bg-neutral-900 rounded-full text-neutral-400 hover:text-white">
-                <i class="ph ph-x text-lg"></i>
-            </button>
-        </div>
+    <!-- Views -->
+    <main id="main-content" class="px-4 mt-2">
         
-        <!-- Cart Items List -->
-        <div id="cart-items-container" class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-            <!-- Items injected by JS -->
-            <div class="text-center text-neutral-500 mt-10" id="empty-cart-msg">
-                <i class="ph ph-shopping-cart text-4xl mb-2"></i>
+        <!-- Home View -->
+        <div id="home-view" class="view-section">
+            <h2 class="text-xl font-bold mb-4 mt-2">Каталог</h2>
+            <div id="products-grid" class="grid grid-cols-2 gap-3"></div>
+        </div>
+
+        <!-- Cart View -->
+        <div id="cart-view" class="view-section hidden">
+            <h2 class="text-xl font-bold mb-4 mt-2">Корзина</h2>
+            <div id="cart-items" class="space-y-3 mb-6"></div>
+            <div id="cart-summary" class="bg-[#1a1a1a] p-4 rounded-xl hidden">
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-400">Товары</span>
+                    <span id="cart-total-price" class="font-bold">0 ₽</span>
+                </div>
+                <button onclick="showPayment()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl mt-2 transition-colors">
+                    Оплатить в Telegram
+                </button>
+            </div>
+            <div id="empty-cart" class="text-center text-gray-500 mt-10">
+                <i class="fa-solid fa-cart-shopping text-4xl mb-3 opacity-50"></i>
                 <p>Ваша корзина пуста</p>
             </div>
         </div>
 
-        <!-- Checkout Section -->
-        <div class="bg-[#111111] border-t border-neutral-900 p-4 pb-safe" style="padding-bottom: max(1rem, env(safe-area-inset-bottom));">
-            <div class="flex justify-between items-center mb-4">
-                <span class="text-neutral-400">Итого к оплате:</span>
-                <span class="text-xl font-bold text-white" id="cart-total">0 ₽</span>
-            </div>
-            <button onclick="checkout()" id="checkout-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                <span>Оплатить в Telegram</span>
-                <i class="ph-bold ph-arrow-right"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Admin Modal -->
-    <div id="admin-modal" class="cart-modal fixed inset-0 bg-[#0a0a0a] z-50 flex flex-col h-full w-full">
-        <div class="flex items-center justify-between p-4 border-b border-neutral-900 bg-[#0a0a0a] sticky top-0">
-            <h2 class="text-xl font-bold">Управление магазином</h2>
-            <button onclick="closeAdmin()" class="p-2 bg-neutral-900 rounded-full text-neutral-400 hover:text-white">
-                <i class="ph ph-x text-lg"></i>
-            </button>
-        </div>
-        <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
-            <div>
-                <h3 class="text-lg font-bold mb-3">Добавить товар</h3>
-                <form onsubmit="addProduct(event)" class="flex flex-col gap-3">
-                    <input id="add-name" placeholder="Название (напр. Nike Dunk)" required class="bg-[#111] p-3 rounded-xl text-white border border-neutral-800 text-sm focus:outline-none focus:border-red-500">
-                    <input id="add-price" type="number" placeholder="Цена (₽)" required class="bg-[#111] p-3 rounded-xl text-white border border-neutral-800 text-sm focus:outline-none focus:border-red-500">
-                    <input id="add-img" type="text" placeholder="URL картинок (через запятую)" required class="bg-[#111] p-3 rounded-xl text-white border border-neutral-800 text-sm focus:outline-none focus:border-red-500">
-                    <input id="add-sizes" type="text" placeholder="Размеры (напр: 38, 39, 40)" required class="bg-[#111] p-3 rounded-xl text-white border border-neutral-800 text-sm focus:outline-none focus:border-red-500">
-                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors">Добавить кроссовки</button>
-                </form>
-            </div>
-            <div>
-                <h3 class="text-lg font-bold mb-3">Изменить цены</h3>
-                <div id="admin-product-list" class="flex flex-col gap-3 pb-8">
-                    <!-- Injected by JS -->
+        <!-- Profile View -->
+        <div id="profile-view" class="view-section hidden">
+            <div class="flex items-center space-x-4 bg-[#1a1a1a] p-4 rounded-xl mb-6">
+                <div onclick="toggleAdmin()" class="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-xl font-bold cursor-pointer">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div>
+                    <h2 id="user-name" class="font-bold text-lg">Покупатель</h2>
+                    <p class="text-sm text-gray-400">ID: <span id="user-id">...</span></p>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Product Details Modal -->
-    <div id="product-modal" class="cart-modal fixed inset-0 bg-[#0a0a0a] z-50 flex flex-col h-full w-full">
-        <!-- Injected by JS -->
-    </div>
-
-    <!-- Review Modal -->
-    <div id="review-modal" class="cart-modal fixed inset-0 bg-[#0a0a0a] z-[60] flex flex-col h-full w-full">
-        <div class="flex items-center justify-between p-4 border-b border-neutral-900 bg-[#0a0a0a] sticky top-0">
-            <h2 class="text-xl font-bold">Оставить отзыв</h2>
-            <button onclick="closeReviewModal()" class="p-2 bg-neutral-900 rounded-full text-neutral-400 hover:text-white">
-                <i class="ph ph-x text-lg"></i>
+            <button id="admin-btn" onclick="switchView('admin-view')" class="hidden w-full bg-gray-800 p-4 rounded-xl flex items-center justify-between mb-6">
+                <div class="flex items-center text-red-500"><i class="fa-solid fa-gear mr-3"></i> Управление магазином</div>
+                <i class="fa-solid fa-chevron-right text-gray-500 text-sm"></i>
             </button>
-        </div>
-        <form onsubmit="submitReview(event)" class="p-4 flex flex-col gap-4 flex-1">
-            <div class="flex items-center justify-center gap-2 py-4 text-4xl text-neutral-600">
-                <i id="star-1" onclick="setReviewRating(1)" class="ph-fill ph-star text-red-500 cursor-pointer transition-colors"></i>
-                <i id="star-2" onclick="setReviewRating(2)" class="ph-fill ph-star text-red-500 cursor-pointer transition-colors"></i>
-                <i id="star-3" onclick="setReviewRating(3)" class="ph-fill ph-star text-red-500 cursor-pointer transition-colors"></i>
-                <i id="star-4" onclick="setReviewRating(4)" class="ph-fill ph-star text-red-500 cursor-pointer transition-colors"></i>
-                <i id="star-5" onclick="setReviewRating(5)" class="ph-fill ph-star text-red-500 cursor-pointer transition-colors"></i>
+
+            <h3 class="font-bold mb-3">Мои заказы</h3>
+            <div id="orders-list" class="space-y-3 mb-6"></div>
+
+            <div class="space-y-2">
+                <button onclick="openSupport()" class="w-full bg-[#1a1a1a] p-4 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center"><i class="fa-solid fa-headset mr-3 text-blue-400"></i> Служба поддержки</div>
+                    <i class="fa-solid fa-chevron-right text-gray-500 text-sm"></i>
+                </button>
+                <button onclick="tg.showAlert('TeymBots Store v1.0\nРазработано специально для доставки оригинальной обуви из Китая.')" class="w-full bg-[#1a1a1a] p-4 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center"><i class="fa-solid fa-circle-info mr-3 text-gray-400"></i> О приложении</div>
+                    <i class="fa-solid fa-chevron-right text-gray-500 text-sm"></i>
+                </button>
             </div>
-            <textarea id="review-text" required placeholder="Напишите, что вам понравилось..." class="bg-[#111] w-full h-32 p-4 rounded-xl text-white border border-neutral-800 focus:outline-none focus:border-red-500 resize-none"></textarea>
-            <button type="submit" class="mt-auto bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition-colors">
-                Отправить отзыв
-            </button>
-        </form>
-    </div>
-
-    <!-- Support Notification Modal -->
-    <div id="support-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4 transition-opacity">
-        <div class="bg-[#111] p-6 rounded-2xl border border-neutral-800 shadow-2xl flex flex-col items-center text-center gap-3">
-            <div class="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
-                <i class="ph-fill ph-info text-2xl"></i>
-            </div>
-            <p id="support-modal-msg" class="text-white font-medium"></p>
         </div>
-    </div>
 
-    <!-- SBP Payment Modal -->
-    <div id="sbp-modal" class="hidden fixed inset-0 bg-[#0a0a0a] z-[80] flex flex-col h-full w-full">
-        <div class="flex items-center justify-between p-4 border-b border-neutral-900 bg-[#0a0a0a] sticky top-0">
-            <h2 class="text-xl font-bold">Оплата СБП</h2>
-            <button onclick="closeSBPModal()" class="p-2 bg-neutral-900 rounded-full text-neutral-400 hover:text-white">
-                <i class="ph ph-x text-lg"></i>
-            </button>
-        </div>
-        <div class="flex-1 p-6 flex flex-col items-center justify-center gap-6">
-            <p class="text-center text-neutral-400 text-sm">Отсканируйте QR-код в приложении вашего банка для тестовой оплаты</p>
-            <div class="bg-white p-4 rounded-2xl">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TEST_SBP_PAYMENT" alt="QR Code" class="w-48 h-48">
+        <!-- Admin View -->
+        <div id="admin-view" class="view-section hidden">
+            <div class="flex items-center mb-6">
+                <button onclick="switchView('profile-view')" class="mr-4 text-gray-400"><i class="fa-solid fa-arrow-left"></i></button>
+                <h2 class="text-xl font-bold">Управление магазином</h2>
             </div>
-            <div class="text-center">
-                <p class="text-neutral-500 text-xs">Сумма к оплате</p>
-                <p class="text-2xl font-bold text-white mt-1" id="sbp-total">0 ₽</p>
+            <div class="bg-[#1a1a1a] p-4 rounded-xl space-y-3">
+                <input type="text" id="add-title" placeholder="Название модели" class="w-full bg-[#0a0a0a] p-3 rounded-lg outline-none border border-gray-800">
+                <input type="number" id="add-price" placeholder="Цена (₽)" class="w-full bg-[#0a0a0a] p-3 rounded-lg outline-none border border-gray-800">
+                <textarea id="add-images" placeholder="Ссылки на фото (через запятую)" class="w-full bg-[#0a0a0a] p-3 rounded-lg outline-none border border-gray-800 h-20"></textarea>
+                <input type="text" id="add-sizes" placeholder="Размеры (через запятую, напр: 39,40,41)" class="w-full bg-[#0a0a0a] p-3 rounded-lg outline-none border border-gray-800">
+                <button onclick="addProduct()" class="w-full bg-red-600 text-white font-bold py-3 rounded-lg mt-2">Добавить товар</button>
             </div>
-            <button onclick="confirmPayment()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition-colors mt-4">
-                Я оплатил
-            </button>
         </div>
-    </div>
+    </main>
 
-    <!-- Application Logic -->
-    <script>
-        // Initialize Telegram WebApp
-        const tg = window.Telegram.WebApp;
-        tg.expand(); // Expand to full height
-        tg.ready();  // Notify Telegram app is ready
+    <!-- Product Modal -->
+    <div id="product-modal" class="fixed inset-0 bg-[#0a0a0a] z-50 hidden flex-col overflow-y-auto">
+        <button onclick="closeProduct()" class="absolute top-4 left-4 z-10 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+        
+        <div class="relative h-72 bg-white flex items-center justify-center">
+            <img id="modal-img" src="" class="w-full h-full object-contain p-4">
+            <button onclick="prevImage()" class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/20 rounded-full flex items-center justify-center"><i class="fa-solid fa-chevron-left"></i></button>
+            <button onclick="nextImage()" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/20 rounded-full flex items-center justify-center"><i class="fa-solid fa-chevron-right"></i></button>
+            <div id="img-counter" class="absolute bottom-2 bg-black/50 px-2 py-1 rounded-md text-xs">1/1</div>
+        </div>
 
-        // State Variables
-        let products = [];
-        let cart = [];
-        let orders = [];
-
-        function initApp() {
-            // Load Persisted State from LocalStorage securely
-            try {
-                const storedProducts = localStorage.getItem('sneaker_products');
-                products = storedProducts ? JSON.parse(storedProducts) : [];
-                
-                const storedCart = localStorage.getItem('sneaker_cart');
-                cart = storedCart ? JSON.parse(storedCart) : [];
-                
-                const storedOrders = localStorage.getItem('sneaker_orders');
-                orders = storedOrders ? JSON.parse(storedOrders) : [];
-            } catch (e) {
-                console.error("Failed to parse local storage", e);
-                products = []; cart = []; orders = [];
-            }
-
-            // Restore missing object structures instead of clearing data (prevents wipe bug)
-            if (products.length > 0) {
-                let needsSave = false;
-                products = products.map(p => {
-                    if (!p.images || !p.sizes || !p.reviews) needsSave = true;
-                    return {
-                        ...p,
-                        images: p.images || [],
-                        sizes: p.sizes || ['40', '41', '42'],
-                        reviews: p.reviews || []
-                    };
-                });
-                if (needsSave) saveProducts();
-            }
-
-            // Force explicit re-render of UI with loaded data
-            renderProducts();
-            updateCartUI();
-            renderOrders();
-        }
-
-        // Ensure init runs strictly on load (or immediately if already loaded)
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initApp);
-        } else {
-            initApp();
-        }
-
-        function saveProducts() {
-            localStorage.setItem('sneaker_products', JSON.stringify(products));
-        }
-        function saveCart() {
-            localStorage.setItem('sneaker_cart', JSON.stringify(cart));
-        }
-        function saveOrders() {
-            localStorage.setItem('sneaker_orders', JSON.stringify(orders));
-        }
-
-        // Format Currency
-        const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(price) + ' ₽';
-
-        // Render Product Grid
-        function renderProducts(productsToRender = products) {
-            const grid = document.getElementById('products-grid');
+        <div class="p-4 flex-1">
+            <h2 id="modal-title" class="text-2xl font-bold mb-2">Название</h2>
+            <div id="modal-price" class="text-xl text-red-500 font-bold mb-6">0 ₽</div>
             
-            if (productsToRender.length === 0) {
-                grid.innerHTML = '<div class="col-span-2 text-center text-neutral-500 py-8">Пока нет товаров. Зайдите в админку!</div>';
+            <h3 class="font-bold mb-3">Выберите размер</h3>
+            <div id="modal-sizes" class="flex gap-2 overflow-x-auto hide-scrollbar mb-6 pb-2"></div>
+
+            <div class="bg-[#1a1a1a] rounded-xl p-4 mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold">Отзывы</h3>
+                    <button onclick="addReview()" class="text-red-500 text-sm">Оставить отзыв</button>
+                </div>
+                <div id="modal-reviews" class="space-y-3 text-sm text-gray-300"></div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-[#0a0a0a] border-t border-gray-800 pb-8">
+            <button onclick="addToCart()" class="w-full bg-red-600 hover:bg-red-700 font-bold py-3 rounded-xl transition-colors">В корзину</button>
+        </div>
+    </div>
+
+    <!-- Payment Modal (Test) -->
+    <div id="payment-modal" class="fixed inset-0 bg-black/90 z-[60] hidden flex-col items-center justify-center p-4">
+        <div class="bg-[#1a1a1a] p-6 rounded-xl w-full max-w-sm text-center">
+            <h3 class="text-xl font-bold mb-4">Оплата заказа</h3>
+            <div class="bg-white p-2 rounded-lg inline-block mb-4">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=SBPTeymBotsTest" class="w-48 h-48">
+            </div>
+            <p class="text-sm text-gray-400 mb-6">Отсканируйте QR-код через приложение вашего банка (Тестовый режим)</p>
+            <button onclick="confirmPayment()" class="w-full bg-green-600 font-bold py-3 rounded-xl mb-3">Я оплатил</button>
+            <button onclick="closePayment()" class="w-full bg-gray-700 py-3 rounded-xl">Отмена</button>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 w-full bg-[#111] border-t border-gray-800 flex justify-around py-3 z-30 pb-6">
+        <button onclick="switchView('home-view', this)" class="nav-btn active flex flex-col items-center w-16 text-gray-500">
+            <i class="fa-solid fa-house text-xl mb-1"></i>
+            <span class="text-[10px]">Главная</span>
+        </button>
+        <button onclick="switchView('cart-view', this)" class="nav-btn flex flex-col items-center w-16 text-gray-500">
+            <div class="relative">
+                <i class="fa-solid fa-cart-shopping text-xl mb-1"></i>
+                <span id="cart-badge" class="absolute -top-1 -right-2 bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
+            </div>
+            <span class="text-[10px]">Корзина</span>
+        </button>
+        <button onclick="switchView('profile-view', this)" class="nav-btn flex flex-col items-center w-16 text-gray-500">
+            <i class="fa-regular fa-user text-xl mb-1"></i>
+            <span class="text-[10px]">Профиль</span>
+        </button>
+    </nav>
+
+    <!-- JavaScript Logic -->
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.setBackgroundColor('#0a0a0a');
+        tg.setHeaderColor('#0a0a0a');
+
+        // State
+        let products = JSON.parse(localStorage.getItem('teym_products')) || [];
+        let cart = JSON.parse(localStorage.getItem('teym_cart')) || [];
+        let orders = JSON.parse(localStorage.getItem('teym_orders')) || [];
+        
+        let currentProduct = null;
+        let currentImageIndex = 0;
+        let selectedSize = null;
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set user data
+            if(tg.initDataUnsafe?.user) {
+                document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name;
+                document.getElementById('user-id').innerText = tg.initDataUnsafe.user.id;
+                if(tg.initDataUnsafe.user.id.toString() === '123456789') { // Replace with your ID
+                    document.getElementById('admin-btn').classList.remove('hidden');
+                }
+            }
+            renderProducts();
+            updateCartBadge();
+            renderOrders();
+        });
+
+        // Navigation
+        function switchView(viewId, btnElement = null) {
+            tg.HapticFeedback.impactOccurred('light');
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+            
+            if(btnElement) {
+                document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+                btnElement.classList.add('active');
+            }
+
+            if(viewId === 'cart-view') renderCart();
+        }
+
+        // Easter Egg for Admin
+        function toggleAdmin() {
+            document.getElementById('admin-btn').classList.toggle('hidden');
+            tg.HapticFeedback.impactOccurred('medium');
+        }
+
+        // Render Products
+        function renderProducts(items = products) {
+            const grid = document.getElementById('products-grid');
+            if(items.length === 0) {
+                grid.innerHTML = '<div class="col-span-2 text-center text-gray-500 py-10">Товаров пока нет</div>';
                 return;
             }
-
-            grid.innerHTML = productsToRender.map(product => `
-                <div class="bg-[#111111] rounded-2xl p-2.5 flex flex-col gap-2 border border-neutral-900 relative">
-                    <button class="absolute top-4 right-4 z-10 text-neutral-400 hover:text-red-500 bg-neutral-900/50 rounded-full p-1 backdrop-blur-sm">
-                        <i class="ph ph-heart"></i>
-                    </button>
-                    <div onclick="openProduct(${product.id})" class="w-full aspect-square rounded-xl bg-white overflow-hidden relative p-4 flex items-center justify-center cursor-pointer">
-                        <img src="${product.images && product.images.length > 0 ? product.images[0] : ''}" alt="${product.name}" class="w-full h-full object-contain">
+            grid.innerHTML = items.map(p => `
+                <div onclick="openProduct(${p.id})" class="bg-[#1a1a1a] rounded-xl overflow-hidden cursor-pointer">
+                    <div class="h-32 bg-white flex items-center justify-center">
+                        <img src="${p.images[0]}" class="h-full object-contain p-2">
                     </div>
-                    <div onclick="openProduct(${product.id})" class="flex flex-col flex-1 mt-1 cursor-pointer">
-                        <h3 class="text-sm font-medium text-white text-truncate-2 leading-tight">${product.name}</h3>
-                        <div class="flex items-center gap-1 mt-1 mb-2">
-                            <div class="flex text-red-500 text-[10px]">
-                                <i class="ph-fill ph-star"></i>
-                                <span class="text-[10px] text-neutral-500 ml-1">${product.rating} (${product.reviews ? product.reviews.length : 0})</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-auto flex items-center justify-between">
-                        <div class="flex flex-col pointer-events-none">
-                            <span class="text-neutral-500 text-xs line-through leading-none">${formatPrice(product.oldPrice)}</span>
-                            <span class="text-red-500 font-bold text-sm leading-none mt-1">${formatPrice(product.price)}</span>
-                        </div>
-                        <button onclick="addToCart(${product.id}, null, event)" class="bg-red-600 hover:bg-red-700 w-8 h-8 rounded-lg flex items-center justify-center text-white transition-colors z-10 relative">
-                            <i class="ph-bold ph-plus pointer-events-none"></i>
-                        </button>
+                    <div class="p-3">
+                        <h3 class="text-sm font-bold truncate">${p.title}</h3>
+                        <p class="text-red-500 font-bold text-sm mt-1">${p.price} ₽</p>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Cart Functions
-        function addToCart(productId, specificSize = null, event = null) {
-            if (event) {
-                event.stopPropagation();
-            }
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
+        // Search
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase();
+            renderProducts(products.filter(p => p.title.toLowerCase().includes(q)));
+        });
+
+        // Admin: Add Product
+        function addProduct() {
+            const title = document.getElementById('add-title').value;
+            const price = document.getElementById('add-price').value;
+            const imagesRaw = document.getElementById('add-images').value;
+            const sizesRaw = document.getElementById('add-sizes').value;
+
+            if(!title || !price || !imagesRaw) return tg.showAlert('Заполните основные поля');
+
+            const newProduct = {
+                id: Date.now(),
+                title,
+                price: parseInt(price),
+                images: imagesRaw.split(',').map(s => s.trim()),
+                sizes: sizesRaw ? sizesRaw.split(',').map(s => s.trim()) : ['39','40','41','42'],
+                reviews: []
+            };
+
+            products.push(newProduct);
+            localStorage.setItem('teym_products', JSON.stringify(products));
             
-            // Get size from parameter, or globally selected size, or default first size
-            const itemSize = specificSize || selectedSize || (product.sizes ? product.sizes[0] : '40');
+            document.getElementById('add-title').value = '';
+            document.getElementById('add-price').value = '';
+            document.getElementById('add-images').value = '';
+            document.getElementById('add-sizes').value = '';
             
-            const existingItem = cart.find(item => item.id === productId && item.size === itemSize);
-            
-            if (existingItem) {
-                existingItem.quantity += 1;
-            } else {
-                cart.push({ ...product, quantity: 1, size: itemSize });
-            }
-            
-            saveCart();
-            updateCartUI();
-            tg.HapticFeedback.impactOccurred('light'); // Native TG haptic feedback
+            renderProducts();
+            switchView('home-view', document.querySelectorAll('.nav-btn')[0]);
+            tg.showAlert('Товар успешно добавлен!');
         }
 
-        function updateQuantity(productId, itemSize, change) {
-            const itemIndex = cart.findIndex(item => item.id === productId && item.size === String(itemSize));
-            if (itemIndex > -1) {
-                cart[itemIndex].quantity += change;
-                if (cart[itemIndex].quantity <= 0) {
-                    cart.splice(itemIndex, 1);
-                }
-                saveCart();
-                updateCartUI();
-                tg.HapticFeedback.impactOccurred('light');
+        // Product Modal Logic
+        function openProduct(id) {
+            currentProduct = products.find(p => p.id === id);
+            currentImageIndex = 0;
+            selectedSize = null;
+            
+            updateModalImage();
+            document.getElementById('modal-title').innerText = currentProduct.title;
+            document.getElementById('modal-price').innerText = currentProduct.price + ' ₽';
+            
+            const sizesHtml = currentProduct.sizes.map(s => 
+                `<button onclick="selectSize(this, '${s}')" class="size-btn px-4 py-2 bg-[#2a2a2a] rounded-lg border border-transparent whitespace-nowrap">${s}</button>`
+            ).join('');
+            document.getElementById('modal-sizes').innerHTML = sizesHtml;
+            
+            renderReviews();
+            document.getElementById('product-modal').classList.remove('hidden');
+            document.getElementById('product-modal').classList.add('flex');
+        }
+
+        function closeProduct() {
+            document.getElementById('product-modal').classList.add('hidden');
+            document.getElementById('product-modal').classList.remove('flex');
+        }
+
+        function updateModalImage() {
+            document.getElementById('modal-img').src = currentProduct.images[currentImageIndex];
+            document.getElementById('img-counter').innerText = `${currentImageIndex + 1}/${currentProduct.images.length}`;
+        }
+
+        function prevImage() {
+            if(currentImageIndex > 0) { currentImageIndex--; updateModalImage(); }
+        }
+
+        function nextImage() {
+            if(currentImageIndex < currentProduct.images.length - 1) { currentImageIndex++; updateModalImage(); }
+        }
+
+        function selectSize(btn, size) {
+            document.querySelectorAll('.size-btn').forEach(b => {
+                b.classList.remove('border-red-500', 'text-red-500');
+            });
+            btn.classList.add('border-red-500', 'text-red-500');
+            selectedSize = size;
+            tg.HapticFeedback.selectionChanged();
+        }
+
+        // Reviews
+        function renderReviews() {
+            const cont = document.getElementById('modal-reviews');
+            if(!currentProduct.reviews || currentProduct.reviews.length === 0) {
+                cont.innerHTML = '<p class="text-gray-500 italic">Пока нет отзывов. Будьте первым!</p>';
+                return;
+            }
+            cont.innerHTML = currentProduct.reviews.map(r => 
+                `<div class="border-b border-gray-800 pb-2"><span class="font-bold text-white">${r.author}:</span> ${r.text}</div>`
+            ).join('');
+        }
+
+        function addReview() {
+            const text = prompt('Напишите ваш отзыв:');
+            if(text) {
+                if(!currentProduct.reviews) currentProduct.reviews = [];
+                currentProduct.reviews.push({ author: tg.initDataUnsafe?.user?.first_name || 'Покупатель', text });
+                localStorage.setItem('teym_products', JSON.stringify(products));
+                renderReviews();
             }
         }
 
-        function updateCartUI() {
-            // Update Badge
-            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+        // Cart Logic
+        function addToCart() {
+            if(!selectedSize) return tg.showAlert('Пожалуйста, выберите размер');
+            
+            cart.push({ ...currentProduct, cartId: Date.now(), selectedSize });
+            localStorage.setItem('teym_cart', JSON.stringify(cart));
+            
+            updateCartBadge();
+            closeProduct();
+            tg.HapticFeedback.notificationOccurred('success');
+            tg.showAlert('Товар добавлен в корзину!');
+        }
+
+        function updateCartBadge() {
             const badge = document.getElementById('cart-badge');
-            
-            if (totalItems > 0) {
-                badge.textContent = totalItems > 99 ? '99+' : totalItems;
+            if(cart.length > 0) {
+                badge.innerText = cart.length;
                 badge.classList.remove('hidden');
             } else {
                 badge.classList.add('hidden');
             }
+        }
 
-            // Update Modal Content
-            const container = document.getElementById('cart-items-container');
-            const emptyMsg = document.getElementById('empty-cart-msg');
-            const checkoutBtn = document.getElementById('checkout-btn');
-            
-            if (cart.length === 0) {
-                container.innerHTML = '';
-                container.appendChild(emptyMsg);
-                emptyMsg.style.display = 'block';
-                document.getElementById('cart-total').textContent = '0 ₽';
-                checkoutBtn.disabled = true;
+        function renderCart() {
+            const cont = document.getElementById('cart-items');
+            const summary = document.getElementById('cart-summary');
+            const empty = document.getElementById('empty-cart');
+
+            if(cart.length === 0) {
+                cont.innerHTML = '';
+                summary.classList.add('hidden');
+                empty.classList.remove('hidden');
                 return;
             }
 
-            emptyMsg.style.display = 'none';
-            checkoutBtn.disabled = false;
-            
+            empty.classList.add('hidden');
+            summary.classList.remove('hidden');
+
             let total = 0;
-            container.innerHTML = cart.map(item => {
-                total += item.price * item.quantity;
+            cont.innerHTML = cart.map(item => {
+                total += item.price;
                 return `
-                    <div class="flex gap-3 bg-[#111111] p-3 rounded-2xl border border-neutral-900">
-                        <img src="${item.images && item.images.length > 0 ? item.images[0] : ''}" class="w-20 h-20 rounded-xl object-contain bg-white p-2 flex-shrink-0">
-                        <div class="flex flex-col flex-1 py-1 min-w-0">
-                            <div class="flex justify-between items-start gap-2">
-                                <h4 class="text-sm font-medium text-white truncate">${item.name}</h4>
-                                <span class="text-[10px] font-bold text-neutral-400 bg-neutral-800 px-2 py-0.5 rounded flex-shrink-0">Размер: ${item.size}</span>
-                            </div>
-                            <span class="text-red-500 font-bold text-sm mt-1">${formatPrice(item.price)}</span>
-                            
-                            <div class="flex items-center gap-3 mt-auto bg-neutral-900 w-fit rounded-lg border border-neutral-800">
-                                <button onclick="updateQuantity(${item.id}, '${item.size}', -1)" class="w-7 h-7 flex items-center justify-center text-neutral-400 hover:text-white"><i class="ph-bold ph-minus"></i></button>
-                                <span class="text-sm font-medium w-4 text-center">${item.quantity}</span>
-                                <button onclick="updateQuantity(${item.id}, '${item.size}', 1)" class="w-7 h-7 flex items-center justify-center text-neutral-400 hover:text-white"><i class="ph-bold ph-plus"></i></button>
-                            </div>
-                        </div>
+                <div class="flex bg-[#1a1a1a] p-3 rounded-xl relative">
+                    <div class="w-20 h-20 bg-white rounded-lg flex items-center justify-center shrink-0">
+                        <img src="${item.images[0]}" class="w-full h-full object-contain p-1">
                     </div>
+                    <div class="ml-3 flex-1">
+                        <h3 class="text-sm font-bold pr-6">${item.title}</h3>
+                        <p class="text-xs text-gray-400 mt-1">Размер: ${item.selectedSize}</p>
+                        <p class="text-red-500 font-bold mt-1">${item.price} ₽</p>
+                    </div>
+                    <button onclick="removeFromCart(${item.cartId})" class="absolute top-3 right-3 text-gray-500 hover:text-red-500"><i class="fa-solid fa-trash"></i></button>
+                </div>
                 `;
             }).join('');
-
-            document.getElementById('cart-total').textContent = formatPrice(total);
+            
+            document.getElementById('cart-total-price').innerText = total + ' ₽';
         }
 
-        // Modal Controls
-        const cartModal = document.getElementById('cart-modal');
+        function removeFromCart(cartId) {
+            cart = cart.filter(c => c.cartId !== cartId);
+            localStorage.setItem('teym_cart', JSON.stringify(cart));
+            updateCartBadge();
+            renderCart();
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        // Payment & Orders
+        function showPayment() {
+            document.getElementById('payment-modal').classList.remove('hidden');
+            document.getElementById('payment-modal').classList.add('flex');
+        }
         
-        function openCart() {
-            cartModal.classList.add('open');
-            updateNavUI('nav-cart'); // highlight cart nav
-            // Update TG back button
-            tg.BackButton.show();
-            tg.BackButton.onClick(closeCart);
-        }
-
-        function closeCart() {
-            cartModal.classList.remove('open');
-            // Restore actual tab state highlight
-            const activeTab = document.getElementById('view-profile').classList.contains('hidden') ? 'nav-catalog' : 'nav-profile';
-            updateNavUI(activeTab);
-
-            tg.BackButton.hide();
-            tg.BackButton.offClick(closeCart);
-        }
-
-        // Tab Switching Logic
-        function switchTab(tabId, btnId = null) {
-            // Close cart if open
-            if(cartModal.classList.contains('open')) {
-                cartModal.classList.remove('open');
-                tg.BackButton.hide();
-                tg.BackButton.offClick(closeCart);
-            }
-
-            const catalogView = document.getElementById('view-catalog');
-            const profileView = document.getElementById('view-profile');
-
-            if (tabId === 'catalog') {
-                catalogView.classList.remove('hidden');
-                profileView.classList.add('hidden');
-                updateNavUI(btnId || 'nav-catalog');
-
-                // If "Catalog" (search) was clicked, focus search bar
-                if (btnId === 'nav-search') {
-                    setTimeout(() => {
-                        const searchInput = document.getElementById('search-input');
-                        if (searchInput) searchInput.focus();
-                    }, 100);
-                }
-            } else if (tabId === 'profile') {
-                catalogView.classList.add('hidden');
-                profileView.classList.remove('hidden');
-                updateNavUI(btnId || 'nav-profile');
-            }
-            
-            // Trigger native haptic feedback
-            tg.HapticFeedback.selectionChanged();
-        }
-
-        function updateNavUI(activeId) {
-            const navBtns = document.querySelectorAll('.nav-btn');
-            navBtns.forEach(btn => {
-                btn.classList.remove('text-red-600');
-                btn.classList.add('text-neutral-500');
-                
-                // Toggle icons to outlined state
-                const icon = btn.querySelector('.nav-icon');
-                if (icon) {
-                    if(icon.classList.contains('ph-house')) icon.className = 'ph ph-house text-2xl nav-icon';
-                    if(icon.classList.contains('ph-magnifying-glass')) icon.className = 'ph ph-magnifying-glass text-2xl nav-icon';
-                    if(icon.classList.contains('ph-shopping-cart')) icon.className = 'ph ph-shopping-cart text-2xl nav-icon';
-                    if(icon.classList.contains('ph-user')) icon.className = 'ph ph-user text-2xl nav-icon';
-                }
-            });
-
-            const activeBtn = document.getElementById(activeId);
-            if (activeBtn) {
-                activeBtn.classList.remove('text-neutral-500');
-                activeBtn.classList.add('text-red-600');
-                
-                // Toggle active icon to filled state
-                const icon = activeBtn.querySelector('.nav-icon');
-                if (icon) {
-                    if(icon.classList.contains('ph-house')) icon.className = 'ph-fill ph-house text-2xl nav-icon';
-                    if(icon.classList.contains('ph-magnifying-glass')) icon.className = 'ph-fill ph-magnifying-glass text-2xl nav-icon';
-                    if(icon.classList.contains('ph-shopping-cart')) icon.className = 'ph-fill ph-shopping-cart text-2xl nav-icon';
-                    if(icon.classList.contains('ph-user')) icon.className = 'ph-fill ph-user text-2xl nav-icon';
-                }
-            }
-        }
-
-        // Send Data back to Bot
-        function checkout() {
-            if (cart.length === 0) return;
-            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            
-            // Show QR Code SBP Modal
-            document.getElementById('sbp-total').textContent = formatPrice(total);
-            document.getElementById('sbp-modal').classList.remove('hidden');
-            tg.HapticFeedback.selectionChanged();
-        }
-
-        function closeSBPModal() {
-            document.getElementById('sbp-modal').classList.add('hidden');
+        function closePayment() {
+            document.getElementById('payment-modal').classList.add('hidden');
+            document.getElementById('payment-modal').classList.remove('flex');
         }
 
         function confirmPayment() {
-            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const orderId = Math.floor(100000 + Math.random() * 900000); // 6 digit ID
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
             
-            orders.unshift({
-                orderId: orderId,
-                items: [...cart],
+            const newOrder = {
+                id: 'ORD-' + Math.floor(Math.random() * 10000),
+                date: new Date().toLocaleDateString(),
+                items: cart,
                 total: total,
-                status: 'В пути',
-                date: new Date().toLocaleDateString('ru-RU')
-            });
+                status: 'В пути'
+            };
+
+            orders.unshift(newOrder);
+            localStorage.setItem('teym_orders', JSON.stringify(orders));
+            
+            // Send data to Telegram Bot
+            tg.sendData(JSON.stringify({ items: cart, totalPrice: total }));
             
             cart = [];
-            saveCart();
-            saveOrders();
+            localStorage.setItem('teym_cart', JSON.stringify(cart));
             
-            updateCartUI();
+            updateCartBadge();
             renderOrders();
-            closeSBPModal();
-            closeCart();
-            
-            showCustomAlert('Заказ успешно оплачен и оформлен!');
-            tg.HapticFeedback.notificationOccurred('success');
-            
-            switchTab('profile', 'nav-profile');
+            closePayment();
+            switchView('profile-view', document.querySelectorAll('.nav-btn')[2]);
+            tg.showAlert('Оплата прошла успешно! Заказ оформлен.');
         }
 
-        // Render Orders function
         function renderOrders() {
-            const container = document.getElementById('orders-container');
-            if (!container) return;
-            
-            if (orders.length === 0) {
-                container.innerHTML = '<p class="text-neutral-500 text-sm">У вас пока нет заказов.</p>';
+            const cont = document.getElementById('orders-list');
+            if(orders.length === 0) {
+                cont.innerHTML = '<p class="text-gray-500 text-sm">У вас пока нет заказов</p>';
                 return;
             }
-            
-            container.innerHTML = orders.map(order => `
-                <div class="bg-[#111] rounded-2xl p-4 border border-neutral-900 flex flex-col gap-3">
-                    <div class="flex justify-between items-center border-b border-neutral-800 pb-2">
-                        <span class="text-sm font-medium text-white">Заказ #${order.orderId}</span>
-                        <span class="text-[10px] font-bold text-red-500 bg-red-500/10 px-2 py-1 rounded tracking-wide uppercase">${order.status}</span>
+
+            cont.innerHTML = orders.map(o => `
+                <div class="bg-[#1a1a1a] p-4 rounded-xl border border-gray-800">
+                    <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-2">
+                        <span class="font-bold text-sm">${o.id}</span>
+                        <span class="text-xs bg-red-900/30 text-red-500 px-2 py-1 rounded">${o.status}</span>
                     </div>
-                    <div class="flex flex-col gap-3">
-                    ${order.items.map(item => `
-                        <div class="flex gap-3 items-center">
-                            <img src="${item.images && item.images.length > 0 ? item.images[0] : ''}" class="w-12 h-12 rounded-lg bg-white object-contain p-1 flex-shrink-0">
-                            <div class="flex flex-col flex-1 min-w-0">
-                                <span class="text-sm font-medium text-white truncate">${item.name}</span>
-                                <div class="flex justify-between items-center mt-1">
-                                    <span class="text-xs text-neutral-500">Размер: ${item.size} • ${item.quantity} шт.</span>
-                                    <span class="text-sm font-bold text-red-500">${formatPrice(item.price)}</span>
+                    <div class="space-y-2">
+                        ${o.items.map(item => `
+                            <div class="flex items-center text-sm">
+                                <div class="w-10 h-10 bg-white rounded flex items-center justify-center mr-3">
+                                    <img src="${item.images[0]}" class="w-full h-full object-contain p-0.5">
                                 </div>
+                                <div class="flex-1 truncate">${item.title} (Размер: ${item.selectedSize})</div>
                             </div>
-                        </div>
-                    `).join('')}
+                        `).join('')}
                     </div>
-                    <div class="pt-2 border-t border-neutral-800 flex justify-between items-center">
-                        <span class="text-xs text-neutral-500">${order.date}</span>
-                        <span class="text-sm font-bold text-white">Итого: ${formatPrice(order.total)}</span>
-                    </div>
+                    <div class="mt-3 text-right font-bold text-red-500">${o.total} ₽</div>
                 </div>
             `).join('');
         }
 
-        // Support Function
         function openSupport() {
-            showCustomAlert('Вы будете перенаправлены в чат с поддержкой.');
-            setTimeout(() => {
-                if (tg && tg.openTelegramLink) {
-                    tg.openTelegramLink('https://t.me/telegram');
-                } else {
-                    window.open('https://t.me/telegram', '_blank');
-                }
-            }, 1500);
+            tg.openTelegramLink('https://t.me/durov'); // Замени на свой username
         }
-
-        function showCustomAlert(msg) {
-            const modal = document.getElementById('support-modal');
-            const content = document.getElementById('support-modal-msg');
-            content.textContent = msg;
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 3000);
-        }
-
-        function openAbout() {
-            showCustomAlert('TeymBots Shop v1.0\nРазработано: Тимофей Жданов (Teym)');
-        }
-
-        // --- ADMIN ACCESS CONTROL ---
-        const ADMIN_ID = 123456789; // <-- ВПИШИ СЮДА СВОЙ TELEGRAM ID
-        
-        if (tg.initDataUnsafe?.user?.id === ADMIN_ID) {
-            document.getElementById('admin-menu-btn').classList.remove('hidden');
-        }
-
-        // Скрытая кнопка для тестов (нажми на аватарку)
-        let testAdminAccess = false;
-        function toggleAdminAccess() {
-            testAdminAccess = !testAdminAccess;
-            const btn = document.getElementById('admin-menu-btn');
-            if(testAdminAccess) {
-                btn.classList.remove('hidden');
-                tg.HapticFeedback.notificationOccurred('success');
-            } else {
-                btn.classList.add('hidden');
-            }
-        }
-
-        // Admin Panel Functions
-        const adminModal = document.getElementById('admin-modal');
-        
-        function openAdmin() {
-            adminModal.classList.add('open');
-            renderAdminProducts();
-            tg.BackButton.show();
-            tg.BackButton.onClick(closeAdmin);
-        }
-
-        function closeAdmin() {
-            adminModal.classList.remove('open');
-            tg.BackButton.hide();
-            tg.BackButton.offClick(closeAdmin);
-        }
-
-        function renderAdminProducts() {
-            const container = document.getElementById('admin-product-list');
-            container.innerHTML = products.map(p => `
-                <div class="flex items-center justify-between bg-[#111] p-3 rounded-xl border border-neutral-800">
-                    <div class="flex items-center gap-3 overflow-hidden flex-1 mr-2">
-                        <img src="${p.images && p.images.length > 0 ? p.images[0] : ''}" class="w-12 h-12 rounded-lg bg-white object-contain p-1.5 flex-shrink-0">
-                        <span class="text-sm font-medium text-white truncate">${p.name}</span>
-                    </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        <input type="number" value="${p.price}" onchange="updatePrice(${p.id}, this.value)" class="bg-[#222] p-2 rounded-lg w-20 text-white text-sm text-center border border-neutral-700 focus:outline-none focus:border-red-500">
-                        <span class="text-neutral-500 text-sm">₽</span>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function updatePrice(id, newPrice) {
-            const p = products.find(x => x.id === id);
-            if(p && newPrice) {
-                p.price = parseInt(newPrice);
-                saveProducts();
-                renderProducts(); // Refresh main catalog
-                updateCartUI(); // Refresh cart if item is inside
-                tg.HapticFeedback.impactOccurred('light');
-            }
-        }
-
-        function addProduct(e) {
-            e.preventDefault();
-            const name = document.getElementById('add-name').value;
-            const price = parseInt(document.getElementById('add-price').value);
-            const imgInput = document.getElementById('add-img').value;
-            const sizesInput = document.getElementById('add-sizes').value;
-            const newId = products.length ? Math.max(...products.map(x => x.id)) + 1 : 1; 
-            
-            // Support multiple images separated by comma
-            const imagesArray = imgInput.split(',').map(url => url.trim()).filter(url => url !== '');
-            // Parse sizes
-            const sizesArray = sizesInput.split(',').map(s => s.trim()).filter(s => s !== '');
-
-            products.unshift({ 
-                id: newId, 
-                name, 
-                price, 
-                oldPrice: price + Math.floor(price * 0.2),
-                rating: 5.0, 
-                images: imagesArray,
-                reviews: [],
-                sizes: sizesArray.length ? sizesArray : ['40', '41', '42']
-            });
-            
-            saveProducts();
-            renderProducts();
-            renderAdminProducts();
-            e.target.reset();
-            tg.HapticFeedback.notificationOccurred('success');
-        }
-
-        // --- NEW LOGIC: Product Details & Reviews ---
-        let currentProductId = null;
-        let selectedSize = null;
-
-        function openProduct(id) {
-            const product = products.find(p => p.id === id);
-            if (!product) return;
-            currentProductId = id;
-            selectedSize = product.sizes[0];
-
-            const modal = document.getElementById('product-modal');
-            modal.innerHTML = `
-                <div class="flex items-center justify-between p-4 border-b border-neutral-900 bg-[#0a0a0a] sticky top-0 z-20">
-                    <h2 class="text-lg font-bold truncate pr-4">${product.name}</h2>
-                    <button onclick="closeProduct()" class="p-2 bg-neutral-900 rounded-full text-neutral-400 hover:text-white flex-shrink-0">
-                        <i class="ph ph-x text-lg"></i>
-                    </button>
-                </div>
-                <div class="flex-1 overflow-y-auto pb-24">
-                    <!-- Carousel -->
-                    <div class="relative w-full h-72 bg-white">
-                        <div id="product-carousel" class="w-full h-full flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth relative">
-                            ${product.images.map(url => `
-                                <div class="w-full h-full flex-shrink-0 snap-center p-4 flex items-center justify-center">
-                                    <img src="${url}" class="max-w-full max-h-full object-contain">
-                                </div>
-                            `).join('')}
-                        </div>
-                        ${product.images.length > 1 ? `
-                            <button onclick="scrollCarousel(-1)" class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center text-white border border-neutral-700 hover:bg-neutral-800 transition-colors z-10">
-                                <i class="ph-bold ph-caret-left"></i>
-                            </button>
-                            <button onclick="scrollCarousel(1)" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center text-white border border-neutral-700 hover:bg-neutral-800 transition-colors z-10">
-                                <i class="ph-bold ph-caret-right"></i>
-                            </button>
-                        ` : ''}
-                    </div>
-                    ${product.images.length > 1 ? '<div class="text-center text-xs text-neutral-500 bg-white pb-2">Свайпайте фото или используйте стрелки</div>' : '<div class="bg-white pb-2"></div>'}
-                    
-                    <div class="p-4 flex flex-col gap-4">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h1 class="text-2xl font-bold text-white leading-tight">${product.name}</h1>
-                                <div class="flex items-center gap-2 mt-2">
-                                    <span class="text-red-500 font-bold text-xl">${formatPrice(product.price)}</span>
-                                    <span class="text-neutral-500 line-through text-sm">${formatPrice(product.oldPrice)}</span>
-                                </div>
-                            </div>
-                            <div class="bg-neutral-900 px-3 py-1.5 rounded-lg flex items-center gap-1 border border-neutral-800">
-                                <i class="ph-fill ph-star text-red-500"></i>
-                                <span class="font-bold">${product.rating}</span>
-                            </div>
-                        </div>
-
-                        <!-- Size Selector -->
-                        <div>
-                            <h3 class="text-sm font-medium text-neutral-400 mb-2">Выберите размер (EU)</h3>
-                            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                                ${product.sizes.map(size => `
-                                    <button onclick="selectSize('${size}')" id="size-btn-${size}" class="size-btn flex-shrink-0 w-12 h-12 rounded-xl border ${size === selectedSize ? 'border-red-500 bg-red-500/10 text-red-500' : 'border-neutral-700 bg-[#111] text-white'} flex items-center justify-center font-medium transition-colors">
-                                        ${size}
-                                    </button>
-                                `).join('')}
-                            </div>
-                        </div>
-
-                        <!-- Reviews -->
-                        <div class="mt-4">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-lg font-bold flex items-center">
-                                    Отзывы
-                                    <span class="text-sm font-normal text-neutral-500 ml-2">${product.reviews.length}</span>
-                                </h3>
-                                <button onclick="openReviewModal(${product.id})" class="text-red-500 text-xs font-bold bg-red-500/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform">
-                                    Оставить отзыв
-                                </button>
-                            </div>
-                            <div class="flex flex-col gap-3">
-                                ${product.reviews.length === 0 ? '<p class="text-neutral-500 text-sm">Пока нет отзывов.</p>' : ''}
-                                ${product.reviews.map(r => `
-                                    <div class="bg-[#111] p-3 rounded-xl border border-neutral-800">
-                                        <div class="flex justify-between items-center mb-1">
-                                            <span class="font-medium text-sm">${r.user}</span>
-                                            <div class="flex text-red-500 text-[10px]">
-                                                ${Array(5).fill(0).map((_, i) => `<i class="${i < r.rating ? 'ph-fill' : 'ph'} ph-star"></i>`).join('')}
-                                            </div>
-                                        </div>
-                                        <p class="text-neutral-400 text-sm">${r.text}</p>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Bottom fixed bar -->
-                <div class="absolute bottom-0 left-0 w-full p-4 bg-[#0a0a0a] border-t border-neutral-900 pb-safe z-30">
-                    <button onclick="addToCart(${product.id}, selectedSize); tg.HapticFeedback.notificationOccurred('success'); closeProduct();" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition-colors">
-                        Добавить в корзину
-                    </button>
-                </div>
-            `;
-            modal.classList.add('open');
-            tg.BackButton.show();
-            tg.BackButton.onClick(closeProduct);
-        }
-
-        function closeProduct() {
-            document.getElementById('product-modal').classList.remove('open');
-            tg.BackButton.hide();
-            tg.BackButton.offClick(closeProduct);
-            currentProductId = null;
-        }
-
-        function scrollCarousel(direction) {
-            const carousel = document.getElementById('product-carousel');
-            if (carousel) {
-                const scrollAmount = carousel.clientWidth;
-                carousel.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
-                tg.HapticFeedback.selectionChanged();
-            }
-        }
-
-        function selectSize(size) {
-            selectedSize = size;
-            document.querySelectorAll('.size-btn').forEach(btn => {
-                btn.classList.remove('border-red-500', 'bg-red-500/10', 'text-red-500');
-                btn.classList.add('border-neutral-700', 'bg-[#111]', 'text-white');
-            });
-            const activeBtn = document.getElementById(`size-btn-${size}`);
-            if(activeBtn) {
-                activeBtn.classList.remove('border-neutral-700', 'bg-[#111]', 'text-white');
-                activeBtn.classList.add('border-red-500', 'bg-red-500/10', 'text-red-500');
-            }
-            tg.HapticFeedback.selectionChanged();
-        }
-
-        let reviewProductId = null;
-        function openReviewModal(productId) {
-            // For demo purposes, link to the first existing product if ID doesn't match
-            const p = products.find(x => x.id === productId) || products[0];
-            if (!p) {
-                showCustomAlert('Сначала добавьте товар в каталог!');
-                return;
-            }
-            reviewProductId = p.id;
-            document.getElementById('review-modal').classList.add('open');
-            document.getElementById('review-text').value = '';
-            setReviewRating(5);
-        }
-
-        function closeReviewModal() {
-            document.getElementById('review-modal').classList.remove('open');
-            reviewProductId = null;
-        }
-
-        let currentRating = 5;
-        function setReviewRating(rating) {
-            currentRating = rating;
-            for(let i=1; i<=5; i++) {
-                const star = document.getElementById(`star-${i}`);
-                if(i <= rating) {
-                    star.classList.replace('ph', 'ph-fill');
-                    star.classList.add('text-red-500');
-                } else {
-                    star.classList.replace('ph-fill', 'ph');
-                    star.classList.remove('text-red-500');
-                }
-            }
-            tg.HapticFeedback.selectionChanged();
-        }
-
-        function submitReview(e) {
-            e.preventDefault();
-            const text = document.getElementById('review-text').value;
-            const product = products.find(p => p.id === reviewProductId);
-            
-            if(product) {
-                product.reviews.unshift({ user: 'Teym', rating: currentRating, text }); // Add to top
-                
-                // Recalculate average rating
-                const totalRating = product.reviews.reduce((sum, r) => sum + r.rating, 0);
-                product.rating = (totalRating / product.reviews.length).toFixed(1);
-                
-                saveProducts();
-                closeReviewModal();
-                renderProducts(); // Refresh catalog ratings
-                
-                // Refresh modal to see new review instantly
-                if(currentProductId === product.id) {
-                    openProduct(product.id);
-                }
-
-                showCustomAlert('Отзыв успешно добавлен!');
-                tg.HapticFeedback.notificationOccurred('success');
+    </script>
+</body>
+</html>
